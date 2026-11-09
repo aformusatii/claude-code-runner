@@ -1,0 +1,22 @@
+services:
+  claude-code-runner:
+    build: .
+    image: claude-code-runner:latest
+    container_name: ${CONTAINER_NAME:-claude-code-runner}
+    restart: unless-stopped
+    env_file: .env
+    # uid:gid of the image's "node" user; match the owner of your workspace files.
+    user: "1000:1000"
+    # The docker.sock group on the host (stat -c %g /var/run/docker.sock).
+    group_add:
+      - "${DOCKER_GID:-999}"
+    ports:
+      - "${APP_PORT:-8064}:3000"
+    volumes:
+      # Claude Code login and settings (~/.claude, ~/.claude.json), gh login, git config, sessions.json.
+      - ${HOME_DIR:-./home}:/home/node
+      # Projects. Mount them at the same path your other tools use, so paths in notes and memories match.
+      - ${WORKSPACE_DIR:?set WORKSPACE_DIR in .env}:/opt/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
